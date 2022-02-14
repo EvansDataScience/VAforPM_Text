@@ -15,6 +15,7 @@ _____
 # Text Data
 _____
 
+1. Getting the data frame with Tweets:
 
 ```{r}
 link1="https://github.com/EvansDataScience/VAforPM_Text/"
@@ -23,25 +24,42 @@ trumpLink=paste0(link1,link2)
 allTweets=read.csv(trumpLink ,stringsAsFactors = F)
 ```
 
+2. Keepng Tweets that are not retweets:
 ```{r}
 DTtweets=allTweets[allTweets$is_retweet==FALSE ,] #no
 row.names(DTtweets)=NULL
+
+#currently:
+head(DTtweets)
 ```
 
+3. Turn the column **text**, into a set of words:
 ```{r}
 library(tidytext) 
 library(magrittr) 
 DTtweets_Words = DTtweets %>%
-unnest_tokens(output=EachWord , input=text,token="words")
+                 unnest_tokens(output=EachWord, # word
+                               input=text,# input column
+                               token="words")
 
-head(DTtweets_Words[,-c(1,2)],10)
+head(DTtweets_Words,10) # notice 'EachWord'
 ```
+You have this many rows:
+
 ```{r}
-# calling the file > 
+nrow(DTtweets_Words) # count of words
+```
+
+
+4. Getting rid of **common words**: These are know as the _STOP WORDS_:
+```{r}
+# calling the file 
 data(stop_words)
-# seeing some rows > 
+# seeing some 'STOP WORDS'  
 head(stop_words)
 ```
+
+Then, we remove them:
 
 ```{r}
 library(dplyr)
@@ -49,13 +67,21 @@ library(dplyr)
  # The column 'word' from 'stop_words' will be compared # to the column 'EachWord' in 'DTtweets_Words' 
 DTtweets_Words = DTtweets_Words %>%anti_join(stop_words,
                                              by = c("EachWord" = "word"))
+
+# You have this many rows now:
+
+nrow(DTtweets_Words) # count of words
 ```
+
+5. Compute **frequency** of each word:
 
 
 ```{r}
 FTtrump = DTtweets_Words %>%dplyr::count(EachWord , sort = TRUE)
 head(FTtrump)
 ```
+
+6. Create plot:
 
 ```{r}
 library(wordcloud2)
@@ -75,4 +101,39 @@ palette = colorRampPalette(newColors)(colorQuant)[FTsub$n] #new version
 wc2=wordcloud2(FTsub , color=palette)
 wc2
 ```
+
+
+### Improving text visuals:
+
+Emoticons. People use emoticons in their Tweets. Unless you translate their meaning, these are not to be analyzed. Use this code to get rid of them:
+
+
+```{r}
+DTtweets$text=gsub("[∧\x01-\x7F]", "", DTtweets$text)
+```
+
+URLs. Generally, you do not need the URLs.
+```{r}
+DTtweets$text=gsub("http\\S+\\s*","", DTtweets$text)
+```
+
+
+• Special characters. Pay attention to symbols like &, >, or <, which may need to be replaced or eliminated like this:
+```{r}
+DTtweets$text=gsub("&amp;", "and", DTtweets$text) #replaced
+DTtweets$text=gsub("&lt;|&gt;", "", DTtweets$text) #eliminated
+
+```
+
+• Optional elements. There are some optional cleaning that might be needed:
+– Users. You can delete the mentions to other Twitter users, if you believe they do not matter:
+```{r}
+DTtweets$text=gsub("@\\w+", "", DTtweets$text)
+```
+
+– Hashtags. You can delete the hashtags, if you believe they do not matter:
+```{r}
+DTtweets$text=gsub("#\\w+", "", DTtweets$text)
+```
+
 
