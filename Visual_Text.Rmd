@@ -1,0 +1,78 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Text Data
+_____
+
+
+```{r}
+link1="https://github.com/EvansDataScience/VAforPM_Text/"
+link2="raw/main/trumps.csv"
+trumpLink=paste0(link1,link2)
+allTweets=read.csv(trumpLink ,stringsAsFactors = F)
+```
+
+```{r}
+DTtweets=allTweets[allTweets$is_retweet==FALSE ,] #no
+row.names(DTtweets)=NULL
+```
+
+```{r}
+library(tidytext) 
+library(magrittr) 
+DTtweets_Words = DTtweets %>%
+unnest_tokens(output=EachWord , input=text,token="words")
+
+head(DTtweets_Words[,-c(1,2)],10)
+```
+```{r}
+# calling the file > 
+data(stop_words)
+# seeing some rows > 
+head(stop_words)
+```
+
+```{r}
+library(dplyr)
+
+ # The column 'word' from 'stop_words' will be compared # to the column 'EachWord' in 'DTtweets_Words' 
+DTtweets_Words = DTtweets_Words %>%anti_join(stop_words,
+                                             by = c("EachWord" = "word"))
+```
+
+
+```{r}
+FTtrump = DTtweets_Words %>%dplyr::count(EachWord , sort = TRUE)
+head(FTtrump)
+```
+
+```{r}
+library(wordcloud2)
+# option for shape are:
+# cardioid,diamond,triangle-forward,triangle,pentagon or star.
+wc1=wordcloud2(data=FTtrump , size=1,minSize = 0,
+               fontFamily = 'Arial', color='random-light', backgroundColor = "white", shape = 'circle')
+wc1
+```
+```{r}
+library(RColorBrewer)  #subsetting
+FTsub=FTtrump[FTtrump$n>4,]
+colorQuant = length(unique(FTsub$n))
+#new colors
+newColors=brewer.pal(9,"Reds")
+palette = colorRampPalette(newColors)(colorQuant)[FTsub$n] #new version
+wc2=wordcloud2(FTsub , color=palette)
+wc2
+```
+
