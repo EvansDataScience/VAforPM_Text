@@ -24,7 +24,7 @@ trumpLink=paste0(link1,link2)
 allTweets=read.csv(trumpLink ,stringsAsFactors = F)
 ```
 
-2. Keepng Tweets that are not retweets:
+2. Keeping Tweets that are not retweets:
 ```{r}
 DTtweets=allTweets[allTweets$is_retweet==FALSE ,] #no
 row.names(DTtweets)=NULL
@@ -33,18 +33,18 @@ row.names(DTtweets)=NULL
 head(DTtweets)
 ```
 
-3. Turn the column **text**, into a set of words:
+3. Turn each tweey in the column **text**, into a set of words:
 ```{r}
 library(tidytext) 
 library(magrittr) 
 DTtweets_Words = DTtweets %>%
-                 unnest_tokens(output=EachWord, # word
-                               input=text,# input column
-                               token="words")
+                 unnest_tokens(output=EachWord, # column created
+                               input=text,# input column from DTtweets
+                               token="words") # level of unnesting
 
 head(DTtweets_Words,10) # notice 'EachWord'
 ```
-You have this many rows:
+You have these many rows:
 
 ```{r}
 nrow(DTtweets_Words) # count of words
@@ -59,7 +59,7 @@ data(stop_words)
 head(stop_words)
 ```
 
-Then, we remove them:
+Then, we  remove the stop words from the _EachWord_ column:
 
 ```{r}
 library(dplyr)
@@ -68,7 +68,7 @@ library(dplyr)
 DTtweets_Words = DTtweets_Words %>%anti_join(stop_words,
                                              by = c("EachWord" = "word"))
 
-# You have this many rows now:
+# You have these many rows now:
 
 nrow(DTtweets_Words) # count of words
 ```
@@ -85,53 +85,67 @@ head(FTtrump)
 
 ```{r}
 library(wordcloud2)
-# option for shape are:
-# cardioid,diamond,triangle-forward,triangle,pentagon or star.
+
 wc1=wordcloud2(data=FTtrump , size=1,minSize = 0,
-               fontFamily = 'Arial', color='random-light', backgroundColor = "white", shape = 'circle')
+               fontFamily = 'Arial', color='random-light', backgroundColor = "white", 
+               shape = 'circle') # option for shape are:
+                                 # cardioid,diamond,triangle-forward,triangle,pentagon or star.
 wc1
 ```
+
+You can improve the cloud:
+1. Getting rid of words with frequency below a threshold:
 ```{r}
-library(RColorBrewer)  #subsetting
 FTsub=FTtrump[FTtrump$n>4,]
-colorQuant = length(unique(FTsub$n))
-#new colors
+```
+
+2. Preparing a palette with the amount of colors needed:
+```{r}
+colorQuant = length(unique(FTsub$n)) # different frequencies
 newColors=brewer.pal(9,"Reds")
 palette = colorRampPalette(newColors)(colorQuant)[FTsub$n] #new version
+```
+
+3. Recreating plot:
+```{r}
+library(RColorBrewer)  
+
 wc2=wordcloud2(FTsub , color=palette)
 wc2
 ```
 
 
-### Improving text visuals:
+### Exercise:
 
-Emoticons. People use emoticons in their Tweets. Unless you translate their meaning, these are not to be analyzed. Use this code to get rid of them:
+Before step 3 above, do this cleaning processs and recreate the word cloud:
+
+a. Getting rid of Emoticons. People use emoticons in their Tweets. Unless you translate their meaning, these are not to be analyzed. Use this code to get rid of them:
 
 
 ```{r}
-DTtweets$text=gsub("[∧\x01-\x7F]", "", DTtweets$text)
+DTtweets$text=gsub("[^\x01-\x7F]", "", DTtweets$text)
 ```
 
-URLs. Generally, you do not need the URLs.
+b. Get rid of URLs. Generally, you do not need the URLs.
+
 ```{r}
 DTtweets$text=gsub("http\\S+\\s*","", DTtweets$text)
 ```
 
 
-• Special characters. Pay attention to symbols like &, >, or <, which may need to be replaced or eliminated like this:
+c. Special characters. Pay attention to symbols like &, >, or <, which may need to be replaced or eliminated like this:
 ```{r}
 DTtweets$text=gsub("&amp;", "and", DTtweets$text) #replaced
 DTtweets$text=gsub("&lt;|&gt;", "", DTtweets$text) #eliminated
 
 ```
 
-• Optional elements. There are some optional cleaning that might be needed:
-– Users. You can delete the mentions to other Twitter users, if you believe they do not matter:
+d. Get rid of users?. Evaluate if you should delete the mentions to other Twitter users, if you believe they do not matter. Fir this exercise do NOT do this:
 ```{r}
 DTtweets$text=gsub("@\\w+", "", DTtweets$text)
 ```
 
-– Hashtags. You can delete the hashtags, if you believe they do not matter:
+e. Get rid of Hashtags?  You can delete the hashtags, if you believe they do not matter:
 ```{r}
 DTtweets$text=gsub("#\\w+", "", DTtweets$text)
 ```
