@@ -1,3 +1,8 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
 <br> 
 <center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
 
@@ -15,7 +20,13 @@ _____
 # Text Data
 _____
 
-1. Getting the data frame with Tweets:
+
+Text can be used for plotting. The plots however require some treatment to the text because words can have several inflections. In this session, you will see the construction of word clouds. These plots represent a variation of bar plots for categories, but are attractive to the eye to show text.
+
+
+1. Get the text:
+
+Let me get a data frame with texts from some tweets:
 
 ```{r}
 link1="https://github.com/EvansDataScience/VAforPM_Text/"
@@ -24,7 +35,10 @@ trumpLink=paste0(link1,link2)
 allTweets=read.csv(trumpLink ,stringsAsFactors = F)
 ```
 
-2. Keeping Tweets that are not retweets:
+2. Make some selection:
+
+This data frame has some columns that allow subsetting. In this case, I will keeping tweets that are not retweets.
+
 ```{r}
 DTtweets=allTweets[allTweets$is_retweet==FALSE ,] #no
 row.names(DTtweets)=NULL
@@ -33,7 +47,10 @@ row.names(DTtweets)=NULL
 head(DTtweets)
 ```
 
-3. Turn each tweey in the column **text**, into a set of words:
+3. Turn the text into words.
+
+This process, also known as tokenization, will produce a simpler element from the input text, in this case words:
+
 ```{r}
 library(tidytext) 
 library(magrittr) 
@@ -44,7 +61,8 @@ DTtweets_Words = DTtweets %>%
 
 head(DTtweets_Words,10) # notice 'EachWord'
 ```
-You have these many rows:
+
+You have these many 'words':
 
 ```{r}
 nrow(DTtweets_Words) # count of words
@@ -52,6 +70,7 @@ nrow(DTtweets_Words) # count of words
 
 
 4. Getting rid of **common words**: These are know as the _STOP WORDS_:
+
 ```{r}
 # calling the file 
 data(stop_words)
@@ -61,7 +80,7 @@ head(stop_words)
 
 Then, we  remove the stop words from the _EachWord_ column:
 
-```{r}
+```{r, message=FALSE}
 library(dplyr)
 
  # The column 'word' from 'stop_words' will be compared # to the column 'EachWord' in 'DTtweets_Words' 
@@ -75,13 +94,14 @@ nrow(DTtweets_Words) # count of words
 
 5. Compute **frequency** of each word:
 
+Here, you are simply producing a frequency table. You could create a barplot with this.
 
 ```{r}
 FTtrump = DTtweets_Words %>%dplyr::count(EachWord , sort = TRUE)
 head(FTtrump)
 ```
 
-6. Create plot:
+6. Create a word cloud:
 
 ```{r}
 library(wordcloud2)
@@ -93,61 +113,129 @@ wc1=wordcloud2(data=FTtrump , size=1,minSize = 0,
 wc1
 ```
 
-You can improve the cloud:
+
+You can improve the cloud by getting rid of words that do not appear often and using your own color scale:
+
 1. Getting rid of words with frequency below a threshold:
 ```{r}
 FTsub=FTtrump[FTtrump$n>4,]
 ```
 
-2. Preparing a palette with the amount of colors needed:
+2. Preparing a palette with the amount of colors desired:
+
 ```{r}
-colorQuant = length(unique(FTsub$n)) # different frequencies
-newColors=brewer.pal(9,"Reds")
-palette = colorRampPalette(newColors)(colorQuant)[FTsub$n] #new version
+library(RColorBrewer)
+colorTones=max(FTsub$n)
+paletteFun = colorRampPalette(c("orange","brown"))
+palette=paletteFun(colorTones)[FTsub$n] 
+
 ```
 
+
 3. Recreating plot:
-```{r}
-library(RColorBrewer)  
+
+
+```{r, fig.show='asis'}
+#This may not show in html. 
+#See: https://github.com/Lchiffon/wordcloud2/issues/65
 
 wc2=wordcloud2(FTsub , color=palette)
 wc2
 ```
 
 
-### Exercise:
+### Exercises:
 
-Before step 3 above, do this cleaning processs and recreate the word cloud:
+1. Try this code instead of the previous one, and discuss the differences you see.
+
+```{r, eval=FALSE}
+colorTones = length(unique(FTsub$n))
+newColors = brewer.pal(9,"Reds")
+paletteFun = colorRampPalette(newColors)
+palette=paletteFun(colorTones)[FTsub$n] 
+```
+
+
+
+2. Before step 3 above, do this cleaning processs and recreate the word cloud:
 
 a. Getting rid of Emoticons. People use emoticons in their Tweets. Unless you translate their meaning, these are not to be analyzed. Use this code to get rid of them:
 
 
-```{r}
+```{r, eval=FALSE}
 DTtweets$text=gsub("[^\x01-\x7F]", "", DTtweets$text)
 ```
 
 b. Get rid of URLs. Generally, you do not need the URLs.
 
-```{r}
+```{r, eval=FALSE}
 DTtweets$text=gsub("http\\S+\\s*","", DTtweets$text)
 ```
 
 
 c. Special characters. Pay attention to symbols like &, >, or <, which may need to be replaced or eliminated like this:
-```{r}
+
+```{r, eval=FALSE}
 DTtweets$text=gsub("&amp;", "and", DTtweets$text) #replaced
 DTtweets$text=gsub("&lt;|&gt;", "", DTtweets$text) #eliminated
 
 ```
 
 d. Get rid of users?. Evaluate if you should delete the mentions to other Twitter users, if you believe they do not matter. Fir this exercise do NOT do this:
-```{r}
+```{r, eval=FALSE}
 DTtweets$text=gsub("@\\w+", "", DTtweets$text)
 ```
 
 e. Get rid of Hashtags?  You can delete the hashtags, if you believe they do not matter:
-```{r}
+```{r, eval=FALSE}
 DTtweets$text=gsub("#\\w+", "", DTtweets$text)
 ```
 
+
+2. Try using [ggwordcloud](https://cran.r-project.org/web/packages/ggwordcloud/vignettes/ggwordcloud.html) instead of *wordcloud2*. Write the code to produce the cloud below.
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE}
+library(ggwordcloud)
+
+ggplot(FTsub, aes(label = EachWord, size = n,color = n)) +
+  geom_text_wordcloud_area() +
+  scale_size_area(max_size = 24) +
+  theme_minimal() +
+  scale_color_gradient(low = "red", high = "darkred")
+
+```
+
+3. Create a new word cloud with the file 'sometext.txt':
+```{r}
+otherText <- read.delim("sometext.txt",header = F)
+head(otherText,2)
+```
+
+Write the code to produce the cloud below:
+
+```{r, echo=FALSE, message=FALSE}
+otherText_words=otherText %>%
+               unnest_tokens(output=EachWord,
+                             input=V1,
+                             token="words")%>%
+               anti_join(stop_words,
+                         by = c("EachWord" = "word"))%>%
+               dplyr::count(EachWord , 
+                            sort = TRUE)
+
+otherText_words=otherText_words[otherText_words$n>4,]
+
+ggplot(otherText_words, aes(label = EachWord, size = n,color = n)) +
+  geom_text_wordcloud(area_corr = TRUE,rm_outside = TRUE) +
+  scale_size_area(max_size = 24) +
+  theme_minimal() +
+  scale_color_gradient(low = "red", high = "darkred")
+```
+```{r,echo=FALSE, eval=FALSE}
+wordcloud2(data=otherText_words , size=1,
+           minSize = 0,fontFamily = 'Arial',
+           color='random-light',
+           backgroundColor = "white",
+           shape = 'circle')
+```
 
